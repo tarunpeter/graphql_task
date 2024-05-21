@@ -1,0 +1,7 @@
+Django==4.1
+graphene==3.3
+graphene-django==3.2.1
+graphene-django-extras==1.0.0
+django-graphql-jwt==0.4.0
+django-graphql-auth==0.3.16
+Faker==25.2.0

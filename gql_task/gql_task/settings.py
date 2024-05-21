@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,6 +28,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+AUTH_USER_MODEL = 'user.User'
 
 # Application definition
 
@@ -37,13 +39,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'graphql_jwt.refresh_token.apps.RefreshTokenConfig',
+    'graphene_django',
+    'graphql_auth',
+    'django_filters',
+    'mil_records',
+    'user'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -99,6 +106,68 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+GRAPHENE = {
+    'SCHEMA': 'gql_task.schema.schema',
+    'SCHEMA_INDENT': 4,
+    'MIDDLEWARE': [
+        'graphql_jwt.middleware.JSONWebTokenMiddleware',
+        'graphene_django_extras.ExtraGraphQLDirectiveMiddleware',
+    ],
+}
+
+
+GRAPHENE_DJANGO_EXTRAS = {
+        'DEFAULT_PAGINATION_CLASS': 'graphene_django_extras.paginations.LimitOffsetGraphqlPagination',
+        'DEFAULT_PAGE_SIZE': 30,
+        'MAX_PAGE_SIZE': 50,
+        'CACHE_ACTIVE': True,
+        'CACHE_TIMEOUT': 300    # seconds
+}
+    
+AUTHENTICATION_BACKENDS = {
+    'graphql_jwt.backends.JSONWebTokenBackend',
+    'django.contrib.auth.backends.ModelBackend',
+    "graphql_auth.backends.GraphQLAuthBackend",
+    'user.custom_auth_backends.EmailOrUsernameModelBackend',
+}
+
+
+GRAPHQL_JWT = {
+    "JWT_ALLOW_ARGUMENT": True,
+    "JWT_VERIFY_EXPIRATION": True,
+    "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
+    "JWT_EXPIRATION_DELTA":  timedelta(minutes=5), # Used for token expiration time
+    "JWT_REFRESH_EXPIRATION_DELTA": timedelta(days=7), # Used for Refresh token expiration time
+    "JWT_ALLOW_ANY_CLASSES": [
+        "graphql_auth.mutations.VerifyToken",
+        "graphql_auth.mutations.RefreshToken",
+        "graphql_auth.mutations.RevokeToken",
+        "graphql_auth.mutations.SendPasswordResetEmail",
+        "graphql_auth.mutations.PasswordReset",
+        # "graphql_auth.mutations.PasswordSet",
+        "graphql_auth.mutations.Register",
+
+    ],
+    "JWT_LONG_RUNNING_REFRESH_TOKEN": True,  # optional
+}
+
+
+GRAPHQL_AUTH = {
+    'LOGIN_ALLOWED_FIELDS': ['username'],  # use email or username field for login
+    'REGISTER_MUTATION_FIELDS': ['email', 'first_name'],  # fields for register mutation
+    'USERNAME_FIELD': ['email'],
+    "EXPIRATION_PASSWORD_RESET_TOKEN": timedelta(hours=int(60)),
+    "EXPIRATION_PASSWORD_SET_TOKEN": timedelta(hours=int(60)),
+    # the next option should solve your problems, tell 'django-filter' which fields to filter
+    'USER_NODE_FILTER_FIELDS': {
+        "email": ["exact", ],
+        "is_active": ["exact"],
+        "status__archived": ["exact"],
+        "status__verified": ["exact"],
+        "status__secondary_email": ["exact"],
+    },
+        # "EXPIRATION_PASSWORD_RESET_TOKEN": timedelta(hours=int(env('RESET_TOKEN_TIMEOUT_HOURS'))),
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
