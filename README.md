@@ -1,4 +1,4 @@
-# Django GraphQL API
+# Django GraphQL Project
 
 This project is a Django-based GraphQL API for managing user records.
 
