@@ -1,31 +1,31 @@
 import os
-from urllib.error import HTTPError
 import django
 import json
-from urllib.request import urlopen
-from datetime import datetime
-from django.db import IntegrityError
 import time
 import re
-from faker import Faker
+from datetime import datetime
+from urllib.error import HTTPError
+from urllib.request import urlopen
+from django.db import IntegrityError
 
 # Setup Django environment
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gql_task.settings')
 django.setup()
 
+from mil_records.models import UserRecord
+
 def normalize_email(email):
-    # Convert the email to lowercase and remove any whitespace
+    """Normalize the email by converting it to lowercase and removing any variations."""
     normalized_email = email.lower().strip()
-    # Remove any characters after '+' in the email (for email variations)
     normalized_email = re.sub(r'\+.*@', '@', normalized_email)
     return normalized_email
 
-from mil_records.models import UserRecord
-
 def fetch_user_data(batch_size):
+    """Fetch user data from the API."""
     url = f'https://randomuser.me/api/?results={batch_size}'
     retries = 5
     delay = 1  # Initial delay in seconds
+
     while retries > 0:
         try:
             with urlopen(url) as response:
@@ -49,23 +49,23 @@ def fetch_user_data(batch_size):
             retries -= 1
             time.sleep(delay)
             delay += 1  # Increase delay for next retry
+
     raise Exception("Failed to fetch user data after multiple retries")
 
-
-fake = Faker()
-
 def create_user_records(data):
+    """Create user records from the fetched data."""
     records = []
     for user in data:
-        name = fake.name()
-        email = fake.email()
+        name = f"{user['name']['first']} {user['name']['last']}"
+        email = normalize_email(user['email'])
         age = user['dob']['age']
-        record = UserRecord(name=name, email=email, age=age)
+        created_at = datetime.strptime(user['registered']['date'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        record = UserRecord(name=name, email=email, age=age, created_at=created_at)
         records.append(record)
     return records
 
 def main():
-    batch_size = 100  # Number of records to fetch per API call
+    batch_size = 1500  # Number of records to fetch per API call
     total_records = 100000000  # Total number of records to insert
     inserted_records = 0
     successful_emails = set()
@@ -75,10 +75,12 @@ def main():
             data = fetch_user_data(batch_size)
             records = create_user_records(data)
             new_records = [record for record in records if record.email not in successful_emails]
+
             if not new_records:
                 print("All records are already inserted. Exiting...")
                 break
-            UserRecord.objects.bulk_create(new_records)
+
+            UserRecord.objects.bulk_create(new_records, ignore_conflicts=True)
             inserted_records += len(new_records)
             successful_emails.update(record.email for record in new_records)
             print(f'Inserted {inserted_records} records')
@@ -88,7 +90,6 @@ def main():
         except Exception as e:
             print(f"Error: {e}")
             break
-
 
 if __name__ == '__main__':
     main()
