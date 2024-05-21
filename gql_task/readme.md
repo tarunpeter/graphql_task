@@ -35,8 +35,77 @@ Log in to the django administration interface.
 
 This project is a Django-based GraphQL API for managing user records.
 
+Authorization and Authentication
+
+#### Create User
+mutation CreateUser($input: UserInput!) {
+  createUser(input: $input) {
+    user {
+      id
+      email
+      username
+      firstName
+      lastName
+    }
+  }
+}
+Variables:
+{
+  "input": {
+    "email": "test@example.com",
+    "username": "testuser",
+    "firstName": "Test",
+    "lastName": "User",
+    "password": "password"
+  }
+}
+
+
+mutation UpdateUser($userId: Int!, $input: UserInput!) {
+  updateUser(userId: $userId, input: $input) {
+    user {
+      id
+      email
+      username
+      firstName
+      lastName
+    }
+  }
+}
+
+Variables:
+{
+  "userId": 1,
+  "input": {
+    "email": "updated@example.com",
+    "username": "updateduser",
+    "firstName": "Updated",
+    "lastName": "User",
+    "password": "newpassword"
+  }
+}
+
+mutation DeleteUser($userId: Int!) {
+  deleteUser(userId: $userId) {
+    success
+    user {
+      id
+      email
+      username
+      firstName
+      lastName
+    }
+  }
+}
+
+Variables:
+{
+  "userId": 1
+}
+
 GraphQL Queries and Mutations
 Queries
+
 1. Home
 
 query {
@@ -106,13 +175,19 @@ mutation DeleteUserRecord($ids: [ID!]!) {
     }
   }
 }
+
 4. Token Authentication
 
 mutation {
-  tokenAuth(username: "admin", password: "admin") {
+  login(username: "admin", password: "admin") {
     token
   }
 }
+
+5. Use the Token in Request Headers
+
+{"Authorization":"JWT eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzE2MzAzMzUwLCJvcmlnSWF0IjoxNzE2MzAzMDUwfQ.OtMhjH2WvtXwPtQjsp0eNeZN9LKL6u0pKSfTvtGjETU"}
+
 Executing Queries and Mutations
 Navigate to the GraphQL endpoint:
 
