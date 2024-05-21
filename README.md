@@ -42,7 +42,7 @@ Log in to the django administration interface.
 
 This project is a Django-based GraphQL API for managing user records.
 
-Authorization and Authentication
+#Authorization and Authentication
 
 #### Create User
 ```
